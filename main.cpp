@@ -121,7 +121,7 @@ struct AdamOptimizer
 
   void UpdateState(double* a_state)
   {
-    const float gamma = 1.0f;
+    const float gamma = 0.25f;
     for (int i=0;i<grad.size();i++)
       a_state[i] -= gamma*grad[i];  
   }
@@ -171,7 +171,7 @@ int main()
   data.Init(100);  
   opt.Init(100);
   
-  for(int iter = 0; iter < 100; iter++) {
+  for(int iter = 0; iter < 1000; iter++) {
     
     double dloss = __enzyme_autodiff((void*)TestDataLoss,
                                      enzyme_dup,   data.f1_data.data(), opt.grad.data(),
@@ -188,8 +188,16 @@ int main()
 
     opt.UpdateGrad();
     opt.UpdateState(data.f1_data.data());
-
-    std::cout << "iater = " << iter << ", loss = (" << lossVal << ")" << std::endl;
+    
+    if((iter+1) % 10 == 0)
+      std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
 
+  std::ofstream fout2("data2.csv");
+  fout2 << "x;f1;f2;f3;f1xf2xf3;optimized;" << std::endl;
+
+  double x = 0.0;
+  double step = 10/double(100);
+  for(int i=0;i<100;i++,x+=step)
+    fout2 << x << ";" << f1(x) << ";" << f2(x) << ";" << f3(x) << ";" << f1(x)*f2(x)*f3(x) << ";" << data.f1_data[i] << std::endl;
 }
