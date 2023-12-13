@@ -77,7 +77,8 @@ struct TestData
 double TestDataLoss(double* __restrict__ f1_val, 
                     double* __restrict__ f2_val,
                     double* __restrict__ f3_val,
-                    double* __restrict__ ref_val, size_t n)
+                    double* __restrict__ ref_val,
+                    double* __restrict__ x_data, size_t n)
 {
   double lossVal = 0.0;
   for(size_t i=0;i<n;i++) 
@@ -85,7 +86,8 @@ double TestDataLoss(double* __restrict__ f1_val,
     double diff = f1_val[i]*f2_val[i]*f3_val[i] - ref_val[i];
     lossVal += diff*diff;
   }
-  return lossVal;
+  
+  return lossVal; 
 }
 
 struct AdamOptimizer
@@ -103,11 +105,15 @@ struct AdamOptimizer
     std::fill(grad.begin(), grad.end(), 0.0);
     std::fill(m_GSquare.begin(), m_GSquare.end(), 0.0);
   }
-  
-  void UpdateGrad() // Adam ==> m[i] = b*mPrev[i] + (1-b)*gradF[i], 
-  {                 //    GSquare[i] = GSquarePrev[i]*a + (1.0f-a)*gradF[i]*gradF[i])
-    const float alpha = 0.5f;
-    const float beta  = 0.25f;
+
+  void UpdateState(double* a_state, int iter)
+  {
+    int factor = iter/100 + 1;
+
+    const float alpha  = 0.5f;
+    const float beta   = 0.25f;
+    const double gamma = 0.25/double(factor);
+
     for(size_t i=0;i<grad.size();i++)
     {
       m_vec    [i] = m_vec[i]*beta + grad[i]*(1.0-beta);
@@ -115,15 +121,8 @@ struct AdamOptimizer
     }
 
     //xNext[i] = x[i] - gamma/(sqrt(GSquare[i] + epsilon)); here we precompute only 1.0/(sqrt(GSquare[i] + epsilon))
-    for (int i=0;i<grad.size();i++)
-      grad[i] = m_vec[i]/(std::sqrt(m_GSquare[i] + double(1e-8f)));
-  }
-
-  void UpdateState(double* a_state)
-  {
-    const float gamma = 0.25f;
-    for (int i=0;i<grad.size();i++)
-      a_state[i] -= gamma*grad[i];  
+    for (int i=0;i<grad.size();i++) 
+      a_state[i] -= (gamma*m_vec[i]/(std::sqrt(m_GSquare[i] + double(1e-25f))));  
   }
 
 };
@@ -171,23 +170,27 @@ int main()
   data.Init(100);  
   opt.Init(100);
   
-  for(int iter = 0; iter < 1000; iter++) {
-    
+  for(int iter = 0; iter < 2000; iter++) 
+  {
+    std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
+
     double dloss = __enzyme_autodiff((void*)TestDataLoss,
                                      enzyme_dup,   data.f1_data.data(), opt.grad.data(),
                                      enzyme_const, data.f2_data.data(),
                                      enzyme_const, data.f3_data.data(),
                                      enzyme_const, data.ref_data.data(),
+                                     enzyme_const, data.x_data.data(),
                                      enzyme_const, opt.grad.size());
-
+    
     double lossVal = TestDataLoss(data.f1_data.data(),
                                   data.f2_data.data(),
                                   data.f3_data.data(),
                                   data.ref_data.data(),
+                                  data.x_data.data(),
                                   opt.grad.size());                                     
 
-    opt.UpdateGrad();
-    opt.UpdateState(data.f1_data.data());
+    //opt.UpdateGrad();
+    opt.UpdateState(data.f1_data.data(), iter);
     
     if((iter+1) % 10 == 0)
       std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
