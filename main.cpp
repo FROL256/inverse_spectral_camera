@@ -92,37 +92,38 @@ double TestDataLoss(double* __restrict__ f1_val,
 
 struct AdamOptimizer
 {
-  std::vector<double> m_vec; // momentum
+  std::vector<double> momentum; 
   std::vector<double> grad;
   std::vector<double> m_GSquare;
   
   void Init(int a_size)
   {
-    m_vec.resize(a_size);
+    momentum.resize(a_size);
     grad.resize(a_size);
     m_GSquare.resize(a_size);
-    std::fill(m_vec.begin(), m_vec.end(), 0.0);
+    std::fill(momentum.begin(), momentum.end(), 0.0);
     std::fill(grad.begin(), grad.end(), 0.0);
     std::fill(m_GSquare.begin(), m_GSquare.end(), 0.0);
   }
 
   void UpdateState(double* a_state, int iter)
   {
-    int factor = iter/100 + 1;
-
-    const float alpha  = 0.5f;
-    const float beta   = 0.25f;
-    const double gamma = 0.25/double(factor);
-
+    int factorGamma    = iter/100 + 1;
+    const double alpha = 0.5;
+    const double beta  = 0.25;
+    const double gamma = 0.25/double(factorGamma);
+    
+    // Adam: m[i] = b*mPrev[i] + (1-b)*gradF[i], 
+    // GSquare[i] = GSquarePrev[i]*a + (1.0f-a)*grad[i]*grad[i])
     for(size_t i=0;i<grad.size();i++)
     {
-      m_vec    [i] = m_vec[i]*beta + grad[i]*(1.0-beta);
+      momentum [i] = momentum[i]*beta + grad[i]*(1.0-beta);
       m_GSquare[i] = 2.0*(m_GSquare[i]*alpha + (grad[i]*grad[i])*(1.0-alpha)); // does not works without 2.0
     }
 
-    //xNext[i] = x[i] - gamma/(sqrt(GSquare[i] + epsilon)); here we precompute only 1.0/(sqrt(GSquare[i] + epsilon))
+    //xNext[i] = x[i] - gamma/(sqrt(GSquare[i] + epsilon)); 
     for (int i=0;i<grad.size();i++) 
-      a_state[i] -= (gamma*m_vec[i]/(std::sqrt(m_GSquare[i] + double(1e-25f))));  
+      a_state[i] -= (gamma*momentum[i]/(std::sqrt(m_GSquare[i] + double(1e-25f))));  
   }
 
 };
@@ -132,43 +133,13 @@ struct AdamOptimizer
 
 int main() 
 {
-  for(double i=1; i<5; i++)
-    printf("square(%f)=%f, dsquare(%f)=%f\n", i, square(i), i, dsquare(i));
-
-  constexpr int N = 4;
-  double A[N] = {1,1,1,1};
-  double dA[N] = {0,0,0,0};
-
-  double B[N] = {2,2,2,2};
-  double dB[N] = {0,0,0,0};
-
-  __enzyme_autodiff((void*)loss,
-                    enzyme_dup, A, dA,
-                    enzyme_dup, B, dB,
-                    enzyme_const, N);
-   
-  std::cout << std::endl;
-  for(int i=0;i<N;i++)
-    std::cout << dA[i] << " ";
-  std::cout << std::endl;
-
-  for(int i=0;i<N;i++)
-    std::cout << dB[i] << " ";
-  std::cout << std::endl;
-
-  std::ofstream fout("data.csv");
-  fout << "x;f1;f2;f3;f1xf2xf3" << std::endl;
-  
-  for(double x = 0.0f; x < 10.0; x+= 0.1)
-    fout << x << ";" << f1(x) << ";" << f2(x) << ";" << f3(x) << ";" << f1(x)*f2(x)*f3(x) << ";" << std::endl;
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   TestData data;
   AdamOptimizer opt;
 
   data.Init(100);  
   opt.Init(100);
+
+  auto initial_f1 = data.f1_data;
   
   for(int iter = 0; iter < 2000; iter++) 
   {
@@ -196,11 +167,11 @@ int main()
       std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
 
-  std::ofstream fout2("data2.csv");
-  fout2 << "x;f1;f2;f3;f1xf2xf3;optimized;" << std::endl;
+  std::ofstream fout2("data.csv");
+  fout2 << "x;f1;f2;f3;f1xf2xf3;initial_f1;optimized_f1;" << std::endl;
 
   double x = 0.0;
   double step = 10/double(100);
   for(int i=0;i<100;i++,x+=step)
-    fout2 << x << ";" << f1(x) << ";" << f2(x) << ";" << f3(x) << ";" << f1(x)*f2(x)*f3(x) << ";" << data.f1_data[i] << std::endl;
+    fout2 << x << ";" << f1(x) << ";" << f2(x) << ";" << f3(x) << ";" << f1(x)*f2(x)*f3(x) << ";" << initial_f1[i] << ";" << data.f1_data[i] << ";" << std::endl;
 }
