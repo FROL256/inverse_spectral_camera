@@ -5,6 +5,8 @@
 #include <vector>
 #include <algorithm>
 
+#include "checker.h"
+
 extern double __enzyme_autodiff(void*, ...);
 int enzyme_const, enzyme_dup, enzyme_out;
 
@@ -133,6 +135,11 @@ struct AdamOptimizer
 
 int main() 
 {
+  auto rects    = GetCheckerRects();
+  auto colorLDR = LoadAveragedCheckerLDRData("/home/frol/PROG/HydraRepos/HydraCore3/z_out_checker.bmp", rects); 
+  for(size_t rectId = 0; rectId < colorLDR.size(); rectId++)
+    std::cout << rectId << ":\t(" << int(colorLDR[rectId].x+0.5f) << ", " << int(colorLDR[rectId].y+0.5f) << ", " << int(colorLDR[rectId].z+0.5f) << ")" << std::endl;
+
   TestData data;
   AdamOptimizer opt;
 
