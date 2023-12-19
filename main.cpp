@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include "checker.h"
+#include "spectrum.h"
 
 extern double __enzyme_autodiff(void*, ...);
 int enzyme_const, enzyme_dup, enzyme_out;
@@ -137,13 +138,16 @@ int main()
 {
   auto rects    = GetCheckerRects();
   auto colorLDR = LoadAveragedCheckerLDRData("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.bmp", rects); 
-  int channels = 0;
+  int  channels = 0;
   auto colorHDR = LoadAveragedSpectrumFromImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", rects, &channels); 
-  for(size_t rectId = 0; rectId < colorLDR.size(); rectId++)
-    std::cout << rectId << ":\t(" << int(colorLDR[rectId].x+0.5f) << ", " << int(colorLDR[rectId].y+0.5f) << ", " << int(colorLDR[rectId].z+0.5f) << ")" << std::endl;
-  
-  std::cout << "channelNum = " << channels << std::endl;
 
+  auto spdLight = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Lights/FalconEyesStudioLEDCOB120BW.spd", channels); 
+
+  for(size_t rectId = 0; rectId < colorLDR.size(); rectId++)
+    std::cout << rectId << ":\t(" << int(colorLDR[rectId].x+0.5f) << ", " << int(colorLDR[rectId].y+0.5f) << ", " << int(colorLDR[rectId].z+0.5f) << ")" << std::endl; 
+  std::cout << "channelNum = " << channels << std::endl;
+  
+  /*
   TestData data;
   AdamOptimizer opt;
 
@@ -185,4 +189,5 @@ int main()
   double step = 10/double(100);
   for(int i=0;i<100;i++,x+=step)
     fout2 << x << ";" << f1(x) << ";" << f2(x) << ";" << f3(x) << ";" << f1(x)*f2(x)*f3(x) << ";" << initial_f1[i] << ";" << data.f1_data[i] << ";" << std::endl;
+  */
 }

@@ -13,7 +13,8 @@ project(dcam)
 
 # Укажите исполняемый файл и исходный файл
 add_executable(dcam main.cpp 
-                    checker.cpp 
+                    checker.cpp
+                    spectrum.cpp 
                     external/litemath/Image2d.cpp)
 
 set(ENZYME_FLAGS "-fplugin=${ENZYME_PLUGIN_DLL}")
