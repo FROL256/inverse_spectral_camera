@@ -174,7 +174,7 @@ int main()
       float3 rgb = XYZToRGB(xyz);
       colorAccum += rgb;
     }
-    colorLDR2[rectId] = colorAccum*(255.0f/float(channels)); // * 100000.0f
+    colorLDR2[rectId] = colorAccum*255.0f; // * 100000.0f
   }
 
   for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {
