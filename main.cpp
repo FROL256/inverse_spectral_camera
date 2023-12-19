@@ -143,11 +143,47 @@ int main()
 
   auto spdLight = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Lights/FalconEyesStudioLEDCOB120BW.spd",  channels); 
   auto spdMats  = LoadAndResampleAllCheckerSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/DatacolorSpyderCheckr24_card2", channels);
-
-  for(size_t rectId = 0; rectId < colorLDR.size(); rectId++)
-    std::cout << rectId << ":\t(" << int(colorLDR[rectId].x+0.5f) << ", " << int(colorLDR[rectId].y+0.5f) << ", " << int(colorLDR[rectId].z+0.5f) << ")" << std::endl; 
-  std::cout << "channelNum = " << channels << std::endl;
   
+  Spectrum curveX, curveY, curveZ;
+  {
+    curveX.wavelengths = Get_CIE_lambda();
+    curveX.values      = Get_CIE_X();
+  
+    curveY.wavelengths = Get_CIE_lambda();
+    curveY.values      = Get_CIE_Y();
+  
+    curveZ.wavelengths = Get_CIE_lambda();
+    curveZ.values      = Get_CIE_Z();
+  }
+
+  auto curveX1 = curveX.Resample(channels);
+  auto curveY1 = curveY.Resample(channels);
+  auto curveZ1 = curveZ.Resample(channels);
+
+  int a = 2;
+  std::cout << "curveX1.size() = " << curveX1.size() << std::endl;
+
+  // test spectrum image to RGB image
+  //
+  std::vector<float3> colorLDR2(rects.size());
+  for(int rectId = 0; rectId < int(rects.size()); rectId++) {
+    const float* colorSpec = colorHDR.data() + rectId*channels;
+    float3 colorAccum(0,0,0);
+    for(int c = 0; c < channels; c++) {
+      float3 xyz = {curveX1[c]*colorSpec[c], curveY1[c]*colorSpec[c], curveZ1[c]*colorSpec[c]};
+      float3 rgb = XYZToRGB(xyz);
+      colorAccum += rgb;
+    }
+    colorLDR2[rectId] = colorAccum*(255.0f/float(channels)); // * 100000.0f
+  }
+
+  for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {
+    std::cout << "from_bmp" << rectId << ":\t(" << int(colorLDR[rectId].x+0.5f) << ", " << int(colorLDR[rectId].y+0.5f) << ", " << int(colorLDR[rectId].z+0.5f) << ")" << std::endl; 
+    std::cout << "from_spd" << rectId << ":\t(" << int(colorLDR2[rectId].x+0.5f) << ", " << int(colorLDR2[rectId].y+0.5f) << ", " << int(colorLDR2[rectId].z+0.5f) << ")" << std::endl; 
+    std::cout << std::endl;
+  }
+  std::cout << "channelNum = " << channels << std::endl;
+
   /*
   TestData data;
   AdamOptimizer opt;
