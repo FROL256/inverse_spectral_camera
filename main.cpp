@@ -136,9 +136,13 @@ struct AdamOptimizer
 int main() 
 {
   auto rects    = GetCheckerRects();
-  auto colorLDR = LoadAveragedCheckerLDRData("/home/frol/PROG/HydraRepos/HydraCore3/z_out_checker.bmp", rects); 
+  auto colorLDR = LoadAveragedCheckerLDRData("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.bmp", rects); 
+  int channels = 0;
+  auto colorHDR = LoadAveragedSpectrumFromImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", rects, &channels); 
   for(size_t rectId = 0; rectId < colorLDR.size(); rectId++)
     std::cout << rectId << ":\t(" << int(colorLDR[rectId].x+0.5f) << ", " << int(colorLDR[rectId].y+0.5f) << ", " << int(colorLDR[rectId].z+0.5f) << ")" << std::endl;
+  
+  std::cout << "channelNum = " << channels << std::endl;
 
   TestData data;
   AdamOptimizer opt;

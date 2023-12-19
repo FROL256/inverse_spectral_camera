@@ -1,4 +1,6 @@
 #include "checker.h"
+#include <iostream>
+#include <fstream>
 
 using LiteMath::uchar4;
 
@@ -52,3 +54,42 @@ std::vector<float3> LoadAveragedCheckerLDRData(const char* path, const std::vect
 
   return res;
 } 
+
+std::vector<float> LoadAveragedSpectrumFromImage3d1f(const char* path, const std::vector<Rect>& a_rectData, int* pChannels)
+{
+  std::ifstream fin(path, std::ios::binary);
+  int xyz[3] = {};
+  fin.read((char*)xyz, sizeof(int)*3);
+
+  (*pChannels) = xyz[2];
+
+  std::vector<float> data(xyz[0]*xyz[1]*xyz[2]);
+  fin.read((char*)data.data(), sizeof(float)*size_t(xyz[0]*xyz[1]*xyz[2]));
+  fin.close();
+  
+  std::vector<float> allSpecters(xyz[2]*a_rectData.size());
+
+  for(int c=0;c<xyz[2];c++)
+  {
+    float* imData = data.data() + xyz[0]*xyz[1]*c;
+
+    for(size_t rectId = 0; rectId < a_rectData.size(); rectId++) 
+    { 
+      auto rect = a_rectData[rectId];
+      float summ = 0.0f;
+      int pixelNum = 0;
+      for(int y=rect.bMin.y; y<rect.bMax.y;y++) {
+        for(int x = rect.bMin.x; x<rect.bMax.x;x++) {
+          float pixel = imData[y*xyz[1]+x];
+          summ += pixel;
+          pixelNum++;
+        }
+      }
+      summ /= float(pixelNum);
+      allSpecters[rectId*xyz[2] + c] = summ; 
+    }
+
+  }
+
+  return allSpecters;
+}
