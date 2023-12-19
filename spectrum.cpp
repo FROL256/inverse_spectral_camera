@@ -77,3 +77,24 @@ std::vector<float> LoadAndResampleSpectrum(const char* path, int channels)
 
   return res;
 }
+
+std::vector<float> LoadAndResampleAllCheckerSpectrum(const char* folder_path, int channels)
+{
+  std::string folderPath(folder_path);
+  std::vector<std::string> allPaths = {"H1", "H2", "H3", "H4", "H5", "H6",
+                                       "G1", "G2", "G3", "G4", "G5", "G6",
+                                       "F1", "F2", "F3", "F4", "F5", "F6",
+                                       "E1", "E2", "E3", "E4", "E5", "E6",};
+
+  std::vector<float> allData;
+  allData.reserve(allPaths.size()*channels);
+
+  for(auto path : allPaths) {
+    std::string fullPath = folderPath + "/" + path + ".spd";
+    //std::cout << "fullPath = " << fullPath.c_str() << std::endl;
+    auto spec = LoadAndResampleSpectrum(fullPath.c_str(), channels);
+    allData.insert(allData.end(), spec.begin(), spec.end());
+  }
+
+  return allData;
+}

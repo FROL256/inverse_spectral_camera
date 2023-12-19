@@ -17,3 +17,4 @@ constexpr static float LAMBDA_MIN = 360.0f;
 constexpr static float LAMBDA_MAX = 830.0f;
 
 std::vector<float> LoadAndResampleSpectrum(const char* path, int channels);
+std::vector<float> LoadAndResampleAllCheckerSpectrum(const char* folder_path, int channels);
