@@ -85,6 +85,10 @@ std::vector<float> LoadAveragedSpectrumFromImage3d1f(const char* path, const std
         }
       }
       summ /= float(pixelNum);
+      //if(rectId == 12)
+      //{
+      //  std::cout << summ << std::endl;
+      //}
       allSpecters[rectId*xyz[2] + c] = summ; 
     }
 

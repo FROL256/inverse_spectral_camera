@@ -163,6 +163,9 @@ int main()
   int a = 2;
   std::cout << "curveX1.size() = " << curveX1.size() << std::endl;
 
+  const float pdf = 1.0f / (LAMBDA_MAX - LAMBDA_MIN);
+  const float CIE_Y_integral = 106.856895f;
+
   // test spectrum image to RGB image
   //
   std::vector<float3> colorLDR2(rects.size());
@@ -170,23 +173,36 @@ int main()
     const float* colorSpec = colorHDR.data() + rectId*channels;
     float3 colorAccum(0,0,0);
     for(int c = 0; c < channels; c++) {
-      float lambda = LAMBDA_MIN + (float(c+0.5f)/float(channels))*(LAMBDA_MAX - LAMBDA_MIN);
-      float curveColorX = curveX.Sample(lambda);
-      float curveColorY = curveY.Sample(lambda);
-      float curveColorZ = curveZ.Sample(lambda);
-      
-      //float3 xyz = {curveColorX*colorSpec[c], curveColorY*colorSpec[c], curveColorZ*colorSpec[c]};
-      float3 xyz = {curveX1[c]*colorSpec[c], curveY1[c]*colorSpec[c], curveZ1[c]*colorSpec[c]};
-      float3 rgb = XYZToRGB(xyz);
-      colorAccum += rgb;
+      float val = colorSpec[c];
+      //float lambda = LAMBDA_MIN + (float(c+0.5f)/float(channels))*(LAMBDA_MAX - LAMBDA_MIN);
+      //float curveColorX = curveX.Sample(lambda);
+      //float curveColorY = curveY.Sample(lambda);
+      //float curveColorZ = curveZ.Sample(lambda);
+      //float3 xyz = {curveColorX*(val/pdf)/CIE_Y_integral, curveColorY*(val/pdf)/CIE_Y_integral, curveColorZ*(val/pdf)/CIE_Y_integral};
+      //if(rectId == 12 && c == 12)
+      //{
+      //  std::cout << "val  = " << val        << std::endl;
+      //  //std::cout << "X[i] = " << curveX1[c] << std::endl;
+      //  //std::cout << "Y[i] = " << curveY1[c] << std::endl;
+      //  //std::cout << "Z[i] = " << curveZ1[c] << std::endl;
+      //}
+      float3 xyz = {curveX1[c]*(val/pdf), curveY1[c]*(val/pdf), curveZ1[c]*(val/pdf)};
+      //float3 rgb = XYZToRGB(xyz);
+      if(rectId == 12) { 
+        std::cout << "xyz = " << xyz.x << " " << xyz.y << " " << xyz.z << std::endl;
+        //std::cout << "rgb = " << rgb.x << " " << rgb.y << " " << rgb.z << std::endl;
+      }
+
+      colorAccum += xyz;
     }
-    colorLDR2[rectId] = colorAccum*255.0f; // * 100000.0f
+    colorLDR2[rectId] = XYZToRGB(colorAccum)*255.0f; // * 100000.0f
   }
 
   for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {
     std::cout << "from_spd" << rectId << ":\t(" << colorLDR2[rectId].x << ", " << colorLDR2[rectId].y << ", " << colorLDR2[rectId].z << ")" << std::endl; 
   }
-
+  
+  std::cout << std::endl;
   for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {
     std::cout << "from_bmp" << rectId << ":\t(" << int(colorLDR[rectId].x+0.5f) << ", " << int(colorLDR[rectId].y+0.5f) << ", " << int(colorLDR[rectId].z+0.5f) << ")" << std::endl; 
     std::cout << "from_spd" << rectId << ":\t(" << int(colorLDR2[rectId].x+0.5f) << ", " << int(colorLDR2[rectId].y+0.5f) << ", " << int(colorLDR2[rectId].z+0.5f) << ")" << std::endl; 
