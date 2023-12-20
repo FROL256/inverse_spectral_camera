@@ -170,11 +170,21 @@ int main()
     const float* colorSpec = colorHDR.data() + rectId*channels;
     float3 colorAccum(0,0,0);
     for(int c = 0; c < channels; c++) {
+      float lambda = LAMBDA_MIN + (float(c+0.5f)/float(channels))*(LAMBDA_MAX - LAMBDA_MIN);
+      float curveColorX = curveX.Sample(lambda);
+      float curveColorY = curveY.Sample(lambda);
+      float curveColorZ = curveZ.Sample(lambda);
+      
+      //float3 xyz = {curveColorX*colorSpec[c], curveColorY*colorSpec[c], curveColorZ*colorSpec[c]};
       float3 xyz = {curveX1[c]*colorSpec[c], curveY1[c]*colorSpec[c], curveZ1[c]*colorSpec[c]};
       float3 rgb = XYZToRGB(xyz);
       colorAccum += rgb;
     }
     colorLDR2[rectId] = colorAccum*255.0f; // * 100000.0f
+  }
+
+  for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {
+    std::cout << "from_spd" << rectId << ":\t(" << colorLDR2[rectId].x << ", " << colorLDR2[rectId].y << ", " << colorLDR2[rectId].z << ")" << std::endl; 
   }
 
   for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {

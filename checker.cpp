@@ -72,7 +72,6 @@ std::vector<float> LoadAveragedSpectrumFromImage3d1f(const char* path, const std
   for(int c=0;c<xyz[2];c++)
   {
     float* imData = data.data() + xyz[0]*xyz[1]*c;
-
     for(size_t rectId = 0; rectId < a_rectData.size(); rectId++) 
     { 
       auto rect = a_rectData[rectId];
@@ -80,7 +79,7 @@ std::vector<float> LoadAveragedSpectrumFromImage3d1f(const char* path, const std
       int pixelNum = 0;
       for(int y=rect.bMin.y; y<rect.bMax.y;y++) {
         for(int x = rect.bMin.x; x<rect.bMax.x;x++) {
-          float pixel = imData[y*xyz[1]+x];
+          float pixel = imData[y*xyz[0]+x];
           summ += pixel;
           pixelNum++;
         }
