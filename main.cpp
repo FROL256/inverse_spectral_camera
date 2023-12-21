@@ -174,28 +174,21 @@ int main()
     float3 colorAccum(0,0,0);
     for(int c = 0; c < channels; c++) {
       float val = colorSpec[c];
-      //float lambda = LAMBDA_MIN + (float(c+0.5f)/float(channels))*(LAMBDA_MAX - LAMBDA_MIN);
-      //float curveColorX = curveX.Sample(lambda);
-      //float curveColorY = curveY.Sample(lambda);
-      //float curveColorZ = curveZ.Sample(lambda);
-      //float3 xyz = {curveColorX*(val/pdf)/CIE_Y_integral, curveColorY*(val/pdf)/CIE_Y_integral, curveColorZ*(val/pdf)/CIE_Y_integral};
-      //if(rectId == 12 && c == 12)
-      //{
-      //  std::cout << "val  = " << val        << std::endl;
-      //  //std::cout << "X[i] = " << curveX1[c] << std::endl;
-      //  //std::cout << "Y[i] = " << curveY1[c] << std::endl;
-      //  //std::cout << "Z[i] = " << curveZ1[c] << std::endl;
+      float lambda = LAMBDA_MIN + (float(c+0.5f)/float(channels))*(LAMBDA_MAX - LAMBDA_MIN);
+      
+      float3 xyz = SpectrumToXYZ(val, lambda, LAMBDA_MIN, LAMBDA_MAX,
+                                 curveX.values.data(), curveY.values.data(), curveZ.values.data());
+      
+      //float3 xyz = {curveX1[c]*(val/pdf), curveY1[c]*(val/pdf), curveZ1[c]*(val/pdf)};
+      float3 rgb = XYZToRGB(xyz);
+      //if(rectId == 12) { 
+      //  std::cout << "val,X = " << val << ", " << curveX1[c] << std::endl;
+      //  //std::cout << "xyz = " << xyz.x << " " << xyz.y << " " << xyz.z << std::endl;
+      //  //std::cout << "rgb = " << rgb.x << " " << rgb.y << " " << rgb.z << std::endl;
       //}
-      float3 xyz = {curveX1[c]*(val/pdf), curveY1[c]*(val/pdf), curveZ1[c]*(val/pdf)};
-      //float3 rgb = XYZToRGB(xyz);
-      if(rectId == 12) { 
-        std::cout << "xyz = " << xyz.x << " " << xyz.y << " " << xyz.z << std::endl;
-        //std::cout << "rgb = " << rgb.x << " " << rgb.y << " " << rgb.z << std::endl;
-      }
-
-      colorAccum += xyz;
+      colorAccum += rgb;
     }
-    colorLDR2[rectId] = XYZToRGB(colorAccum)*255.0f; // * 100000.0f
+    colorLDR2[rectId] = colorAccum*255.0f; // * 100000.0f
   }
 
   for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {
