@@ -86,3 +86,22 @@ bool SaveImage4fToEXR(const float* rgb, int width, int height, const char* outfi
 
   return true;
 }
+
+std::vector<float> LoadImage3d1f(const char* path, int* w, int* h, int* z)
+{
+  std::ifstream fin(path, std::ios::binary);
+  int xyz[3] = {};
+  fin.read((char*)xyz, sizeof(int)*3);
+
+  const int width    = xyz[0];
+  const int height   = xyz[1];
+  const int channels = xyz[2];
+
+  if(w != nullptr) (*w) = width;
+  if(h != nullptr) (*h) = height;
+  if(z != nullptr) (*z) = channels;
+
+  std::vector<float> data(width*height*channels);
+  fin.read((char*)data.data(), sizeof(float)*data.size());
+  fin.close();
+}

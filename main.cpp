@@ -9,6 +9,8 @@
 #include "spectrum.h"
 #include "imageutils.h"
 
+using LiteMath::float4;
+
 extern double __enzyme_autodiff(void*, ...);
 int enzyme_const, enzyme_dup, enzyme_out;
 
@@ -252,13 +254,43 @@ void testGaussians()
   
 }
 
+void test3DImageToImage4f()
+{
+  int width = 0, height = 0, channels = 0;
+  std::vector<float> image3d = LoadImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", &width, &height, &channels);
+  std::vector<float4> image2d(width*height);
+
+  auto r = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd",  channels);
+  auto g = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd",  channels);
+  auto b = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd",  channels); 
+
+  for(int y=0;y<width;y++) {
+    for(int x=0;x<height;x++) {
+      float4 color(0,0,0,0);
+      for(int c=0;c<channels;c++) {
+        float sVal = image3d[y*width+x + c*width*height];
+        color.x += r[c]*sVal;
+        color.y += g[c]*sVal;
+        color.z += b[c]*sVal;
+      }
+      color /= float(channels);  
+      image2d[y*width+x] = color;    
+    }
+  }
+  
+  SaveImage4fToEXR((const float*)image2d.data(), width, height, "/home/frol/PROG/HydraRepos/HydraCore3/z_checker_from_spdi.exr");
+}
+
+
 int main(int argc, const char** argv) 
 {
-  auto rects = GetCheckerRects();
-
-  int  channels = 0;
-  auto colorHDR = LoadAveragedSpectrumFromImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", rects, &channels);
-  int a = 2;
+  test3DImageToImage4f();
+  
+  //auto rects = GetCheckerRects();
+  //
+  //int  channels = 0;
+  //auto colorHDR = LoadAveragedSpectrumFromImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", rects, &channels);
+  //int a = 2;
 
   return 0;
 }
