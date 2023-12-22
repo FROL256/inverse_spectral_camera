@@ -6,28 +6,26 @@ using LiteMath::uchar4;
 
 std::vector<Rect> GetCheckerRects()
 {
-  std::vector<Rect> res; res.reserve(24);
-  
-  int2 size (60,60);
+  std::vector<Rect> res; 
+  res.reserve(24);
 
-  res.push_back({{496,324},{560,390}});
-  res.push_back({{590,325},int2(590,325) + size});
-  res.push_back({{688,328},int2(688,328) + size});
-  res.push_back({{786,329},int2(786,329) + size});
-  res.push_back({{883,330},int2(883,330) + size});
-  res.push_back({{981,332},int2(981,332) + size});
+  int X[6] = {525, 624, 720, 817, 915, 1015};
+  int Y[4] = {345, 445, 545, 640};
+  const int halfSize = 20;
 
-  for(int y=1;y<4;y++) {
+  for(int y=0;y<4;y++) {
     for(int x=0;x<6;x++) {
-      auto rectOld = res[(y-1)*6 + x];
-      rectOld.bMin.y += 96;
-      rectOld.bMax.y += 96;
-      res.push_back(rectOld);
+      Rect rect;
+      rect.bMin.x = X[x] - halfSize;
+      rect.bMin.y = Y[y] - halfSize;
+      rect.bMax.x = X[x] + halfSize;
+      rect.bMax.y = Y[y] + halfSize;
+      res.push_back(rect);
     }
   }
-
   return res;
 }
+
 
 std::vector<float3> LoadAveragedCheckerLDRData(const char* path, const std::vector<Rect>& a_rectData)
 {
@@ -61,17 +59,21 @@ std::vector<float> LoadAveragedSpectrumFromImage3d1f(const char* path, const std
   int xyz[3] = {};
   fin.read((char*)xyz, sizeof(int)*3);
 
-  (*pChannels) = xyz[2];
+  const int width    = xyz[0];
+  const int height   = xyz[1];
+  const int channels = xyz[2];
 
-  std::vector<float> data(xyz[0]*xyz[1]*xyz[2]);
-  fin.read((char*)data.data(), sizeof(float)*size_t(xyz[0]*xyz[1]*xyz[2]));
+  (*pChannels) = channels;
+
+  std::vector<float> data(width*height*channels);
+  fin.read((char*)data.data(), sizeof(float)*data.size());
   fin.close();
   
-  std::vector<float> allSpecters(xyz[2]*a_rectData.size());
+  std::vector<float> allSpecters(channels*a_rectData.size());
 
   for(int c=0;c<xyz[2];c++)
   {
-    float* imData = data.data() + xyz[0]*xyz[1]*c;
+    float* imData = data.data() + width*height*c;
     for(size_t rectId = 0; rectId < a_rectData.size(); rectId++) 
     { 
       auto rect = a_rectData[rectId];
@@ -79,17 +81,15 @@ std::vector<float> LoadAveragedSpectrumFromImage3d1f(const char* path, const std
       int pixelNum = 0;
       for(int y=rect.bMin.y; y<rect.bMax.y;y++) {
         for(int x = rect.bMin.x; x<rect.bMax.x;x++) {
-          float pixel = imData[y*xyz[0]+x];
+          float pixel = imData[y*width+x];
           summ += pixel;
           pixelNum++;
         }
       }
       summ /= float(pixelNum);
       //if(rectId == 12)
-      //{
       //  std::cout << summ << std::endl;
-      //}
-      allSpecters[rectId*xyz[2] + c] = summ; 
+      allSpecters[rectId*channels + c] = summ; 
     }
 
   }

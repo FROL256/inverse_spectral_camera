@@ -134,10 +134,11 @@ struct AdamOptimizer
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int main() 
+void testXYZ()
 {
   auto rects    = GetCheckerRects();
   auto colorLDR = LoadAveragedCheckerLDRData("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.bmp", rects); 
+  
   int  channels = 0;
   auto colorHDR = LoadAveragedSpectrumFromImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", rects, &channels); 
 
@@ -163,7 +164,6 @@ int main()
   int a = 2;
   std::cout << "curveX1.size() = " << curveX1.size() << std::endl;
 
-  const float pdf = 1.0f / (LAMBDA_MAX - LAMBDA_MIN);
   const float CIE_Y_integral = 106.856895f;
 
   // test spectrum image to RGB image
@@ -188,7 +188,7 @@ int main()
       //}
       colorAccum += rgb;
     }
-    colorLDR2[rectId] = colorAccum*255.0f; // * 100000.0f
+    colorLDR2[rectId] = colorAccum*255.0f*(CIE_Y_integral/float(channels)); // * 100000.0f
   }
 
   for(size_t rectId = 0; rectId < colorLDR.size(); rectId++) {
@@ -202,8 +202,11 @@ int main()
     std::cout << std::endl;
   }
   std::cout << "channelNum = " << channels << std::endl;
+}
 
-  /*
+void testGaussians()
+{
+
   TestData data;
   AdamOptimizer opt;
 
@@ -245,5 +248,13 @@ int main()
   double step = 10/double(100);
   for(int i=0;i<100;i++,x+=step)
     fout2 << x << ";" << f1(x) << ";" << f2(x) << ";" << f3(x) << ";" << f1(x)*f2(x)*f3(x) << ";" << initial_f1[i] << ";" << data.f1_data[i] << ";" << std::endl;
-  */
+  
+}
+
+int main(int argc, const char** argv) 
+{
+  auto rects = GetCheckerRects();
+
+
+  return 0;
 }
