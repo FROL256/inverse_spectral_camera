@@ -6,16 +6,21 @@ set(CMAKE_C_COMPILER   "/usr/bin/clang-${CLANG_VERSION}")   # $ export CC=/usr/b
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++-${CLANG_VERSION}") # $ export CXX=/usr/bin/clang++-17
 set(ENZYME_PLUGIN_DLL  "/home/frol/PROG/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/litemath)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/litemath
+                    ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyexr)
 
 # Укажите имя вашего проекта
 project(dcam)
 
+add_library(miniz external/tinyexr/miniz.c)
+
 # Укажите исполняемый файл и исходный файл
 add_executable(dcam main.cpp 
                     checker.cpp
-                    spectrum.cpp 
+                    spectrum.cpp
+                    imageutils.cpp 
                     external/litemath/Image2d.cpp)
 
 set(ENZYME_FLAGS "-fplugin=${ENZYME_PLUGIN_DLL}")
 target_compile_options(dcam PUBLIC ${ENZYME_FLAGS})
+target_link_libraries(dcam LINK_PUBLIC miniz)

@@ -7,6 +7,7 @@
 
 #include "checker.h"
 #include "spectrum.h"
+#include "imageutils.h"
 
 extern double __enzyme_autodiff(void*, ...);
 int enzyme_const, enzyme_dup, enzyme_out;
@@ -255,6 +256,9 @@ int main(int argc, const char** argv)
 {
   auto rects = GetCheckerRects();
 
+  int  channels = 0;
+  auto colorHDR = LoadAveragedSpectrumFromImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", rects, &channels);
+  int a = 2;
 
   return 0;
 }
