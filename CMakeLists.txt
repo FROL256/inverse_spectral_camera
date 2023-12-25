@@ -9,7 +9,13 @@ set(ENZYME_PLUGIN_DLL  "/home/frol/PROG/enzyme/build/Enzyme/ClangEnzyme-${CLANG_
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/litemath
                     ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyexr)
 
-# Укажите имя вашего проекта
+# sanitizer options
+#include(cmake/Sanitizers.cmake)
+#enable_sanitizers(project_options)
+
+#add_compile_options(-fsanitize=address)
+#add_link_options(-fsanitize=address)
+
 project(dcam)
 
 add_library(miniz external/tinyexr/miniz.c)

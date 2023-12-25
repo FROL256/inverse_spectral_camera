@@ -341,10 +341,10 @@ float GoldenSectionCoeff2(float a, float b, float epsilon, FuncData data)
   return (a + b) / 2;
 }
 
-double EvalCurve1(double* camRGB, double* render, double* ref, int rectNum, int channelNum)
+double EvalCurve1(double* camRGB, double* render, double* ref, size_t rectNum, int channelNum)
 {
   float loss = 0.0f;
-  for(int rectId = 0; rectId < rectNum; rectId++) {
+  for(size_t rectId = 0; rectId < rectNum; rectId++) {
     double valRef = ref[rectId];
     double rendVal = 0.0f;
     for(int c = 0; c < channelNum; c++) 
@@ -414,18 +414,18 @@ void testAverageSpectrum()
     for(size_t i=0;i<avgSpecD.size();i++)
       avgSpecD[i] = double(avgSpec[i]);
 
-    for(size_t i=0;i<curve.size();i++)
+    for(size_t i=0;i<colors.size();i++)
       colorD[i] = double(colors[i][0]);
   }
 
-  double initialLossVal = EvalCurve1(curve.data(), avgSpecD.data(), colorD.data(), int(rects.size()), channels);
+  double initialLossVal = EvalCurve1(curve.data(), avgSpecD.data(), colorD.data(), rects.size(), channels);
   std::cout << "initialLoss = " << initialLossVal << std::endl;
   
   
   AdamOptimizer opt;
   opt.Init(curve.size());
   
-  for(int iter = 0; iter < 10; iter++) 
+  for(int iter = 0; iter < 1000; iter++) 
   {
     std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
 
@@ -433,10 +433,10 @@ void testAverageSpectrum()
                                     enzyme_dup,   curve.data(), opt.grad.data(),
                                     enzyme_const, avgSpecD.data(),
                                     enzyme_const, colorD.data(),
-                                    enzyme_const, int(rects.size()),
+                                    enzyme_const, rects.size(),
                                     enzyme_const, channels);
     
-    double lossVal = EvalCurve1(curve.data(), avgSpecD.data(), colorD.data(), int(rects.size()), channels);                                   
+    double lossVal = EvalCurve1(curve.data(), avgSpecD.data(), colorD.data(), rects.size(), channels);                                   
 
     opt.UpdateState(curve.data(), iter);
     
