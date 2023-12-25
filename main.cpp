@@ -124,8 +124,8 @@ struct AdamOptimizer
     // GSquare[i] = GSquarePrev[i]*a + (1.0f-a)*grad[i]*grad[i])
     for(size_t i=0;i<grad.size();i++)
     {
-      momentum [i] = momentum[i]*beta + grad[i]*(1.0-beta);
-      m_GSquare[i] = 2.0*(m_GSquare[i]*alpha + (grad[i]*grad[i])*(1.0-alpha)); // does not works without 2.0
+      momentum [i] = momentum[i]*beta + grad[i]*(RealType(1.0)-beta);
+      m_GSquare[i] = RealType(2.0)*(m_GSquare[i]*alpha + (grad[i]*grad[i])*(RealType(1.0)-alpha)); // does not works without 2.0
     }
 
     //xNext[i] = x[i] - gamma/(sqrt(GSquare[i] + epsilon)); 
@@ -219,7 +219,7 @@ void testGaussians()
 
   auto initial_f1 = data.f1_data;
   
-  for(int iter = 0; iter < 2000; iter++) 
+  for(int iter = 0; iter < 100; iter++) 
   {
     std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
 
@@ -241,8 +241,8 @@ void testGaussians()
     //opt.UpdateGrad();
     opt.UpdateState(data.f1_data.data(), iter);
     
-    if((iter+1) % 10 == 0)
-      std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
+    //if((iter+1) % 10 == 0)
+    std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
 
   std::ofstream fout2("data.csv");
@@ -344,18 +344,18 @@ float GoldenSectionCoeff2(float a, float b, float epsilon, FuncData data)
 
 float EvalProd(const float* camRGB, const float* render, const float3* ref, int rectNum, int channelNum)
 {
-  const float* r = camRGB;
-  const float* g = camRGB + channelNum;
-  const float* b = camRGB + channelNum*2;
-
   float loss = 0.0f;
   for(int rectId = 0; rectId < rectNum; rectId++) {
     const float3 refVal = ref[rectId];
     for(int c = 0; c < channelNum; c++) {
       float  rend    = render[rectId*channelNum + c];
-      float3 rendVal = float3(r[c]*rend, g[c]*rend, b[c]*rend);
-      float3 diff    = refVal - rendVal;
-      loss += LiteMath::dot(diff, diff); 
+      float rendValR = camRGB[c]*rend;
+      float rendValG = camRGB[c + channelNum]*rend;
+      float rendValB = camRGB[c + channelNum*2]*rend;
+      float d0 = refVal.x - rendValR;
+      float d1 = refVal.y - rendValG;
+      float d2 = refVal.z - rendValB;
+      loss += d0*d0 + d1*d1 + d2*d2; 
     }
   }
   return loss;
@@ -457,7 +457,8 @@ int main(int argc, const char** argv)
 {
   //test3DImageToImage4f();
   testAverageSpectrum();
-  
+  //testGaussians();
+
   //auto rects = GetCheckerRects();
   //
   //int  channels = 0;
