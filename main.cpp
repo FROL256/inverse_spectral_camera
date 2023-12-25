@@ -264,11 +264,16 @@ void test3DImageToImage4f()
   auto g = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd",  channels);
   auto b = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd",  channels); 
 
-  for(int y=0;y<width;y++) {
-    for(int x=0;x<height;x++) {
+  std::cout << "width    = " << width << std::endl;
+  std::cout << "height   = " << height << std::endl;
+  std::cout << "channels = " << channels << std::endl;
+
+  for(int y=0;y<height;y++) {
+    for(int x=0;x<width;x++) {
       float4 color(0,0,0,0);
       for(int c=0;c<channels;c++) {
-        float sVal = image3d[y*width+x + c*width*height];
+        int pixelAddr = y*width+x + c*width*height;
+        float sVal = image3d[pixelAddr];
         color.x += r[c]*sVal;
         color.y += g[c]*sVal;
         color.z += b[c]*sVal;
