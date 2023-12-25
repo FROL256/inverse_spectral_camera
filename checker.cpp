@@ -53,27 +53,13 @@ std::vector<float3> LoadAveragedCheckerLDRData(const char* path, const std::vect
   return res;
 } 
 
-std::vector<float> LoadAveragedSpectrumFromImage3d1f(const char* path, const std::vector<Rect>& a_rectData, int* pChannels)
+std::vector<float> AveragedSpectrumFromImage3D(const float* data, int width, int height, int channels, const std::vector<Rect>& a_rectData)
 {
-  std::ifstream fin(path, std::ios::binary);
-  int xyz[3] = {};
-  fin.read((char*)xyz, sizeof(int)*3);
-
-  const int width    = xyz[0];
-  const int height   = xyz[1];
-  const int channels = xyz[2];
-
-  (*pChannels) = channels;
-
-  std::vector<float> data(width*height*channels);
-  fin.read((char*)data.data(), sizeof(float)*data.size());
-  fin.close();
-  
   std::vector<float> allSpecters(channels*a_rectData.size());
 
-  for(int c=0;c<xyz[2];c++)
+  for(int c=0;c<channels;c++)
   {
-    float* imData = data.data() + width*height*c;
+    const float* imData = data + width*height*c;
     for(size_t rectId = 0; rectId < a_rectData.size(); rectId++) 
     { 
       auto rect = a_rectData[rectId];

@@ -18,4 +18,4 @@ struct Rect
 
 std::vector<Rect>   GetCheckerRects();
 std::vector<float3> LoadAveragedCheckerLDRData(const char* path, const std::vector<Rect>& a_rectData); 
-std::vector<float>  LoadAveragedSpectrumFromImage3d1f(const char* path, const std::vector<Rect>& a_rectData, int* pChannels);
+std::vector<float>  AveragedSpectrumFromImage3D(const float* data, int width, int height, int channels, const std::vector<Rect>& a_rectData);

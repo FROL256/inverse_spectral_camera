@@ -137,7 +137,7 @@ struct AdamOptimizer
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void testXYZ()
+/*void testXYZ()
 {
   auto rects    = GetCheckerRects();
   auto colorLDR = LoadAveragedCheckerLDRData("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.bmp", rects); 
@@ -205,7 +205,7 @@ void testXYZ()
     std::cout << std::endl;
   }
   std::cout << "channelNum = " << channels << std::endl;
-}
+}*/
 
 void testGaussians()
 {
@@ -286,10 +286,39 @@ void test3DImageToImage4f()
   SaveImage4fToEXR((const float*)image2d.data(), width, height, "/home/frol/PROG/HydraRepos/HydraCore3/z_checker_from_spdi.exr");
 }
 
+void testAverageSpectrum()
+{
+  int width = 0, height = 0, channels = 0;
+  std::vector<float> image3d = LoadImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", &width, &height, &channels);
+  
+  auto rects   = GetCheckerRects();
+  auto avgSpec = AveragedSpectrumFromImage3D(image3d.data(), width, height, channels, rects);
+
+  auto r = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd",  channels);
+  auto g = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd",  channels);
+  auto b = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd",  channels); 
+
+  std::vector<float4> rectColors(rects.size());
+  for(size_t rectId=0;rectId<rects.size();rectId++)
+  {
+    float4 color(0,0,0,0);
+    for(int c=0;c<channels;c++) {
+      float sVal = avgSpec[rectId*channels + c];
+      color.x += r[c]*sVal;
+      color.y += g[c]*sVal;
+      color.z += b[c]*sVal;
+    }
+    color /= float(channels); 
+    rectColors[rectId] = color; 
+  }
+
+}
+
 
 int main(int argc, const char** argv) 
 {
-  test3DImageToImage4f();
+  //test3DImageToImage4f();
+  testAverageSpectrum();
   
   //auto rects = GetCheckerRects();
   //
