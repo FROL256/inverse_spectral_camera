@@ -112,25 +112,24 @@ struct AdamOptimizer
     std::fill(m_GSquare.begin(), m_GSquare.end(), 0.0);
   }
   
-  template<typename RealType>
-  void UpdateState(RealType* a_state, int iter)
+  void UpdateState(double* a_state, int iter)
   {
     int factorGamma    = iter/100 + 1;
-    const RealType alpha = RealType(0.5);
-    const RealType beta  = RealType(0.25);
-    const RealType gamma = RealType(0.25)/RealType(factorGamma);
+    const double alpha = 0.5;
+    const double beta  = 0.25;
+    const double gamma = 0.25/factorGamma;
     
     // Adam: m[i] = b*mPrev[i] + (1-b)*gradF[i], 
     // GSquare[i] = GSquarePrev[i]*a + (1.0f-a)*grad[i]*grad[i])
     for(size_t i=0;i<grad.size();i++)
     {
-      momentum [i] = momentum[i]*beta + grad[i]*(RealType(1.0)-beta);
-      m_GSquare[i] = RealType(2.0)*(m_GSquare[i]*alpha + (grad[i]*grad[i])*(RealType(1.0)-alpha)); // does not works without 2.0
+      momentum [i] = momentum[i]*beta + grad[i]*(1.0-beta);
+      m_GSquare[i] = 2.0*(m_GSquare[i]*alpha + (grad[i]*grad[i])*(1.0-alpha)); // does not works without 2.0
     }
 
     //xNext[i] = x[i] - gamma/(sqrt(GSquare[i] + epsilon)); 
     for (int i=0;i<grad.size();i++) 
-      a_state[i] -= (gamma*momentum[i]/(std::sqrt(m_GSquare[i] + RealType(1e-25f))));  
+      a_state[i] -= (gamma*momentum[i]/(std::sqrt(m_GSquare[i] + 1e-25f)));  
   }
 
 };
@@ -342,21 +341,16 @@ float GoldenSectionCoeff2(float a, float b, float epsilon, FuncData data)
   return (a + b) / 2;
 }
 
-float EvalProd(const float* camRGB, const float* render, const float3* ref, int rectNum, int channelNum)
+double EvalCurve1(double* camRGB, double* render, double* ref, int rectNum, int channelNum)
 {
   float loss = 0.0f;
   for(int rectId = 0; rectId < rectNum; rectId++) {
-    const float3 refVal = ref[rectId];
-    for(int c = 0; c < channelNum; c++) {
-      float  rend    = render[rectId*channelNum + c];
-      float rendValR = camRGB[c]*rend;
-      float rendValG = camRGB[c + channelNum]*rend;
-      float rendValB = camRGB[c + channelNum*2]*rend;
-      float d0 = refVal.x - rendValR;
-      float d1 = refVal.y - rendValG;
-      float d2 = refVal.z - rendValB;
-      loss += d0*d0 + d1*d1 + d2*d2; 
-    }
+    double valRef = ref[rectId];
+    double rendVal = 0.0f;
+    for(int c = 0; c < channelNum; c++) 
+      rendVal += camRGB[c]*render[rectId*channelNum + c];
+    rendVal /= double(channelNum);
+    loss += (valRef - rendVal)*(valRef - rendVal); 
   }
   return loss;
 }
@@ -409,40 +403,43 @@ void testAverageSpectrum()
   std::cout << "h2 = " << h2 << std::endl;
 
   auto colors = AveragedColor4f(image2dRef.data(), w2, h2, rects);
-  //for(size_t rectId=0; rectId < renderCoeff.size(); rectId++)
-  //  std::cout << "colors[" << rectId << "] = " << colors[rectId].x << " " << colors[rectId].y << " " << colors[rectId].z << std::endl;
+  
+  std::vector<double> curve(channels);
+  std::vector<double> avgSpecD(avgSpec.size());
+  std::vector<double> colorD(rects.size());
+  {
+    for(size_t i=0;i<curve.size();i++)
+      curve[i] = double(r[i]);
 
-  std::vector<float> allCurves;
-  allCurves.insert(allCurves.end(), r.begin(), r.end());
-  allCurves.insert(allCurves.end(), g.begin(), g.end());
-  allCurves.insert(allCurves.end(), b.begin(), b.end());
+    for(size_t i=0;i<avgSpecD.size();i++)
+      avgSpecD[i] = double(avgSpec[i]);
 
-  float initialLossVal = EvalProd(allCurves.data(), avgSpec.data(), colors.data(), int(rects.size()), channels);
+    for(size_t i=0;i<curve.size();i++)
+      colorD[i] = double(colors[i][0]);
+  }
 
+  double initialLossVal = EvalCurve1(curve.data(), avgSpecD.data(), colorD.data(), int(rects.size()), channels);
   std::cout << "initialLoss = " << initialLossVal << std::endl;
-
+  
+  
   AdamOptimizer opt;
-  opt.Init(allCurves.size());
+  opt.Init(curve.size());
   
   for(int iter = 0; iter < 10; iter++) 
   {
     std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
 
-    //EvalProd(const float* camRGB, const float* render, const float3* ref, int rectNum, int channelNum)
-
-    float dloss = __enzyme_autodiff((void*)EvalProd,
-                                    enzyme_dup,   allCurves.data(), opt.grad.data(),
-                                    enzyme_const, avgSpec.data(),
-                                    enzyme_const, colors.data(),
+    double dloss = __enzyme_autodiff((void*)EvalCurve1,
+                                    enzyme_dup,   curve.data(), opt.grad.data(),
+                                    enzyme_const, avgSpecD.data(),
+                                    enzyme_const, colorD.data(),
                                     enzyme_const, int(rects.size()),
                                     enzyme_const, channels);
     
-    float lossVal = EvalProd(allCurves.data(), avgSpec.data(), colors.data(), int(rects.size()), channels);                                     
+    double lossVal = EvalCurve1(curve.data(), avgSpecD.data(), colorD.data(), int(rects.size()), channels);                                   
 
-    opt.UpdateState(renderCoeff.data(), iter);
+    opt.UpdateState(curve.data(), iter);
     
-    
-    //if((iter+1) % 10 == 0)
     std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
 
