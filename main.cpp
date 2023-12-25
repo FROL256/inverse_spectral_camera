@@ -111,13 +111,14 @@ struct AdamOptimizer
     std::fill(grad.begin(), grad.end(), 0.0);
     std::fill(m_GSquare.begin(), m_GSquare.end(), 0.0);
   }
-
-  void UpdateState(double* a_state, int iter)
+  
+  template<typename RealType>
+  void UpdateState(RealType* a_state, int iter)
   {
     int factorGamma    = iter/100 + 1;
-    const double alpha = 0.5;
-    const double beta  = 0.25;
-    const double gamma = 0.25/double(factorGamma);
+    const RealType alpha = RealType(0.5);
+    const RealType beta  = RealType(0.25);
+    const RealType gamma = RealType(0.25)/RealType(factorGamma);
     
     // Adam: m[i] = b*mPrev[i] + (1-b)*gradF[i], 
     // GSquare[i] = GSquarePrev[i]*a + (1.0f-a)*grad[i]*grad[i])
@@ -129,7 +130,7 @@ struct AdamOptimizer
 
     //xNext[i] = x[i] - gamma/(sqrt(GSquare[i] + epsilon)); 
     for (int i=0;i<grad.size();i++) 
-      a_state[i] -= (gamma*momentum[i]/(std::sqrt(m_GSquare[i] + double(1e-25f))));  
+      a_state[i] -= (gamma*momentum[i]/(std::sqrt(m_GSquare[i] + RealType(1e-25f))));  
   }
 
 };
@@ -286,6 +287,61 @@ void test3DImageToImage4f()
   SaveImage4fToEXR((const float*)image2d.data(), width, height, "/home/frol/PROG/HydraRepos/HydraCore3/z_checker_from_spdi.exr");
 }
 
+float EvalRenderCoeff(const float* renderCoeff, const float* lgtSpec, const float* matSpec, const float* renderRef, int rectNum, int channelNum)
+{
+  float loss = 0.0f;
+  for(int rectId = 0; rectId < rectNum; rectId++) {
+    for(int c = 0; c < channelNum; c++) {
+      float rend = renderRef[rectId*channelNum + c];
+      float val  = rend - renderCoeff[rectId]*lgtSpec[c]*matSpec[rectId*channelNum + c];
+      loss += val*val; 
+    }
+  }
+  return loss;
+}
+
+float EvalRenderCoeff2(const float renderCoeff, const float* lgtSpec, const float* matSpec, const float* renderRef, int rectNum, int channelNum)
+{
+  float loss = 0.0f;
+  for(int rectId = 0; rectId < rectNum; rectId++) {
+    for(int c = 0; c < channelNum; c++) {
+      float rend = renderRef[rectId*channelNum + c];
+      float val  = rend - renderCoeff*lgtSpec[c]*matSpec[rectId*channelNum + c];
+      loss += val*val; 
+    }
+  }
+  return loss;
+}
+
+struct FuncData
+{
+  const float* lgtSpec;
+  const float* matSpec;
+  const float* renderRef;
+  int rectNum;
+  int channelNum;
+};
+
+float GoldenSectionCoeff2(float a, float b, float epsilon, FuncData data) 
+{
+  const float phi = (1 + sqrt(5)) / 2; // Золотое сечение
+  float x1 = b - (b - a) / phi;
+  float x2 = a + (b - a) / phi;
+  while (std::abs(b - a) > epsilon) 
+  {
+    const float f1 = EvalRenderCoeff2(x1, data.lgtSpec, data.matSpec, data.renderRef, data.rectNum, data.channelNum);
+    const float f2 = EvalRenderCoeff2(x2, data.lgtSpec, data.matSpec, data.renderRef, data.rectNum, data.channelNum);
+    if (f1 < f2) {
+        b = x2;
+    } else {
+        a = x1;
+    }
+    x1 = b - (b - a) / phi;
+    x2 = a + (b - a) / phi;
+  }
+  return (a + b) / 2;
+}
+
 void testAverageSpectrum()
 {
   int width = 0, height = 0, channels = 0;
@@ -297,20 +353,69 @@ void testAverageSpectrum()
   auto r = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd",  channels);
   auto g = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd",  channels);
   auto b = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd",  channels); 
+  
+  // // test
+  // //
+  // std::vector<float4> rectColors(rects.size());
+  // for(size_t rectId=0;rectId<rects.size();rectId++)
+  // {
+  //   float4 color(0,0,0,0);
+  //   for(int c=0;c<channels;c++) {
+  //     float sVal = avgSpec[rectId*channels + c];
+  //     color.x += r[c]*sVal;
+  //     color.y += g[c]*sVal;
+  //     color.z += b[c]*sVal;
+  //   }
+  //   color /= float(channels); 
+  //   rectColors[rectId] = color; 
+  // }
+  
+  auto spdLight = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Lights/FalconEyesStudioLEDCOB120BW.spd",  channels); 
+  auto spdMats  = LoadAndResampleAllCheckerSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/DatacolorSpyderCheckr24_card2", channels);
+  std::vector<float> renderCoeff(rects.size(), 1.0f);
 
-  std::vector<float4> rectColors(rects.size());
-  for(size_t rectId=0;rectId<rects.size();rectId++)
+  float loss = EvalRenderCoeff(renderCoeff.data(), spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels);
+  std::cout << "initial loss = " << loss << std::endl;
+  
+  float minArgVal = GoldenSectionCoeff2(0.0f, 100.0f, 5e-6f, FuncData{spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels});
+  float minLoss   = EvalRenderCoeff2(minArgVal, spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels);
+
+  std::cout << "minLoss   = " << minLoss << std::endl;
+  std::cout << "minArgVal = " << minArgVal << std::endl;
+
+  /*
+  AdamOptimizer opt;
+  opt.Init(renderCoeff.size());
+  
+  for(int iter = 0; iter < 2000; iter++) 
   {
-    float4 color(0,0,0,0);
-    for(int c=0;c<channels;c++) {
-      float sVal = avgSpec[rectId*channels + c];
-      color.x += r[c]*sVal;
-      color.y += g[c]*sVal;
-      color.z += b[c]*sVal;
-    }
-    color /= float(channels); 
-    rectColors[rectId] = color; 
+    std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
+
+    float dloss = __enzyme_autodiff((void*)EvalRenderCoeff,
+                                    enzyme_dup,   renderCoeff.data(), opt.grad.data(),
+                                    enzyme_const, spdLight.data(),
+                                    enzyme_const, spdMats.data(),
+                                    enzyme_const, avgSpec.data(),
+                                    enzyme_const, int(rects.size()),
+                                    enzyme_const, channels);
+    
+    float lossVal = EvalRenderCoeff(renderCoeff.data(),
+                                    spdLight.data(),
+                                    spdMats.data(),
+                                    avgSpec.data(),
+                                    int(rects.size()),
+                                    channels);                                     
+
+    opt.UpdateState(renderCoeff.data(), iter);
+    
+    
+    if((iter+1) % 10 == 0)
+      std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
+
+  for(size_t rectId=0; rectId < renderCoeff.size(); rectId++)
+    std::cout << "renderCoeff[" << rectId << "] = " << renderCoeff[rectId] << std::endl;
+  */
 
 }
 
