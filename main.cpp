@@ -355,7 +355,7 @@ double EvalCurve1(double* camRGB, double* render, double* ref, size_t rectNum, i
   return loss;
 }
 
-void testAverageSpectrum()
+void fitSingleImage()
 {
   int width = 0, height = 0, channels = 0;
   std::vector<float> image3d = LoadImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", &width, &height, &channels);
@@ -366,22 +366,6 @@ void testAverageSpectrum()
   auto r = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd",  channels);
   auto g = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd",  channels);
   auto b = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd",  channels); 
-  
-  // // test
-  // //
-  // std::vector<float4> rectColors(rects.size());
-  // for(size_t rectId=0;rectId<rects.size();rectId++)
-  // {
-  //   float4 color(0,0,0,0);
-  //   for(int c=0;c<channels;c++) {
-  //     float sVal = avgSpec[rectId*channels + c];
-  //     color.x += r[c]*sVal;
-  //     color.y += g[c]*sVal;
-  //     color.z += b[c]*sVal;
-  //   }
-  //   color /= float(channels); 
-  //   rectColors[rectId] = color; 
-  // }
   
   auto spdLight = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Lights/FalconEyesStudioLEDCOB120BW.spd",  channels); 
   auto spdMats  = LoadAndResampleAllCheckerSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/DatacolorSpyderCheckr24_card2", channels);
@@ -409,12 +393,12 @@ void testAverageSpectrum()
   std::vector<double> colorD(rects.size());
   {
     for(size_t i=0;i<curve.size();i++)
-      curve[i] = double(r[i]);
+      curve[i] = 1.0f; //double(r[i]);
 
     for(size_t i=0;i<avgSpecD.size();i++)
       avgSpecD[i] = double(avgSpec[i]);
 
-    for(size_t i=0;i<colors.size();i++)
+    for(size_t i=0;i<colorD.size();i++)
       colorD[i] = double(colors[i][0]);
   }
 
@@ -442,10 +426,16 @@ void testAverageSpectrum()
     
     std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
-
-  //for(size_t rectId=0; rectId < renderCoeff.size(); rectId++)
-  //  std::cout << "renderCoeff[" << rectId << "] = " << renderCoeff[rectId] << std::endl;
   
+  std::ofstream fout2("red.csv");
+  fout2 << "lambda;initial;optimized;" << std::endl;
+
+  float step = (LAMBDA_MAX - LAMBDA_MIN)/float(channels);
+  for(size_t i=0;i<curve.size();i++) {
+    float lambda = LAMBDA_MIN + step*float(i);
+    fout2 << lambda << ";" << r[i] << ";" << curve[i] << ";" << std::endl;
+  }
+  fout2.close();
 
 }
 
@@ -453,7 +443,7 @@ void testAverageSpectrum()
 int main(int argc, const char** argv) 
 {
   //test3DImageToImage4f();
-  testAverageSpectrum();
+  fitSingleImage();
   //testGaussians();
 
   //auto rects = GetCheckerRects();
