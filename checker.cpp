@@ -53,6 +53,32 @@ std::vector<float3> LoadAveragedCheckerLDRData(const char* path, const std::vect
   return res;
 } 
 
+std::vector<float3> AveragedColor4f(const float* data, int width, int heaight, const std::vector<Rect>& a_rectData)
+{
+  std::vector<float3> res(a_rectData.size());
+  for(size_t rectId = 0; rectId < a_rectData.size(); rectId++) 
+  { 
+    auto rect = a_rectData[rectId];
+    float3 summ(0,0,0);
+    int pixelNum = 0;
+    for(int y=rect.bMin.y; y<rect.bMax.y;y++) {
+      for(int x = rect.bMin.x; x<rect.bMax.x;x++) {
+        float pixelR = data[4*(y*width + x) + 0];
+        float pixelG = data[4*(y*width + x) + 1];
+        float pixelB = data[4*(y*width + x) + 2];
+        summ.x += float(pixelR);
+        summ.y += float(pixelG);
+        summ.z += float(pixelB);
+        pixelNum++;
+      }
+    }
+    summ /= float(pixelNum);
+    res[rectId] = summ; // / 255
+  }
+
+  return res;
+}
+
 std::vector<float> AveragedSpectrumFromImage3D(const float* data, int width, int height, int channels, const std::vector<Rect>& a_rectData)
 {
   std::vector<float> allSpecters(channels*a_rectData.size());

@@ -342,6 +342,25 @@ float GoldenSectionCoeff2(float a, float b, float epsilon, FuncData data)
   return (a + b) / 2;
 }
 
+float EvalProd(const float* camRGB, const float* render, const float3* ref, int rectNum, int channelNum)
+{
+  const float* r = camRGB;
+  const float* g = camRGB + channelNum;
+  const float* b = camRGB + channelNum*2;
+
+  float loss = 0.0f;
+  for(int rectId = 0; rectId < rectNum; rectId++) {
+    const float3 refVal = ref[rectId];
+    for(int c = 0; c < channelNum; c++) {
+      float  rend    = render[rectId*channelNum + c];
+      float3 rendVal = float3(r[c]*rend, g[c]*rend, b[c]*rend);
+      float3 diff    = refVal - rendVal;
+      loss += LiteMath::dot(diff, diff); 
+    }
+  }
+  return loss;
+}
+
 void testAverageSpectrum()
 {
   int width = 0, height = 0, channels = 0;
@@ -382,40 +401,54 @@ void testAverageSpectrum()
 
   std::cout << "minLoss   = " << minLoss << std::endl;
   std::cout << "minArgVal = " << minArgVal << std::endl;
-
-  /*
-  AdamOptimizer opt;
-  opt.Init(renderCoeff.size());
   
-  for(int iter = 0; iter < 2000; iter++) 
+  int w2, h2;
+  auto image2dRef = LoadImage4fFromEXR("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr", &w2, &h2);
+
+  std::cout << "w2 = " << w2 << std::endl;
+  std::cout << "h2 = " << h2 << std::endl;
+
+  auto colors = AveragedColor4f(image2dRef.data(), w2, h2, rects);
+  //for(size_t rectId=0; rectId < renderCoeff.size(); rectId++)
+  //  std::cout << "colors[" << rectId << "] = " << colors[rectId].x << " " << colors[rectId].y << " " << colors[rectId].z << std::endl;
+
+  std::vector<float> allCurves;
+  allCurves.insert(allCurves.end(), r.begin(), r.end());
+  allCurves.insert(allCurves.end(), g.begin(), g.end());
+  allCurves.insert(allCurves.end(), b.begin(), b.end());
+
+  float initialLossVal = EvalProd(allCurves.data(), avgSpec.data(), colors.data(), int(rects.size()), channels);
+
+  std::cout << "initialLoss = " << initialLossVal << std::endl;
+
+  AdamOptimizer opt;
+  opt.Init(allCurves.size());
+  
+  for(int iter = 0; iter < 10; iter++) 
   {
     std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
 
-    float dloss = __enzyme_autodiff((void*)EvalRenderCoeff,
-                                    enzyme_dup,   renderCoeff.data(), opt.grad.data(),
-                                    enzyme_const, spdLight.data(),
-                                    enzyme_const, spdMats.data(),
+    //EvalProd(const float* camRGB, const float* render, const float3* ref, int rectNum, int channelNum)
+
+    float dloss = __enzyme_autodiff((void*)EvalProd,
+                                    enzyme_dup,   allCurves.data(), opt.grad.data(),
                                     enzyme_const, avgSpec.data(),
+                                    enzyme_const, colors.data(),
                                     enzyme_const, int(rects.size()),
                                     enzyme_const, channels);
     
-    float lossVal = EvalRenderCoeff(renderCoeff.data(),
-                                    spdLight.data(),
-                                    spdMats.data(),
-                                    avgSpec.data(),
-                                    int(rects.size()),
-                                    channels);                                     
+    float lossVal = EvalProd(allCurves.data(), avgSpec.data(), colors.data(), int(rects.size()), channels);                                     
 
     opt.UpdateState(renderCoeff.data(), iter);
     
     
-    if((iter+1) % 10 == 0)
-      std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
+    //if((iter+1) % 10 == 0)
+    std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
 
-  for(size_t rectId=0; rectId < renderCoeff.size(); rectId++)
-    std::cout << "renderCoeff[" << rectId << "] = " << renderCoeff[rectId] << std::endl;
-  */
+  //for(size_t rectId=0; rectId < renderCoeff.size(); rectId++)
+  //  std::cout << "renderCoeff[" << rectId << "] = " << renderCoeff[rectId] << std::endl;
+  
 
 }
 
