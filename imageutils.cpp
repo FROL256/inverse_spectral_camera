@@ -104,4 +104,5 @@ std::vector<float> LoadImage3d1f(const char* path, int* w, int* h, int* z)
   std::vector<float> data(width*height*channels);
   fin.read((char*)data.data(), sizeof(float)*data.size());
   fin.close();
+  return data;
 }
