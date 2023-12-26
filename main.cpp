@@ -98,10 +98,6 @@ double TestDataLoss(double* __restrict__ f1_val,
 
 struct AdamOptimizer
 {
-  std::vector<double> momentum; 
-  std::vector<double> grad;
-  std::vector<double> m_GSquare;
-  
   void Init(int a_size)
   {
     momentum.resize(a_size);
@@ -129,9 +125,13 @@ struct AdamOptimizer
 
     //xNext[i] = x[i] - gamma/(sqrt(GSquare[i] + epsilon)); 
     for (int i=0;i<grad.size();i++) 
-      a_state[i] -= (gamma*momentum[i]/(std::sqrt(m_GSquare[i] + 1e-25f)));  
+      a_state[i] -= (gamma*momentum[i]/(std::sqrt(m_GSquare[i] + epsilon)));  
   }
 
+  std::vector<double> momentum; 
+  std::vector<double> grad;
+  std::vector<double> m_GSquare;
+  double epsilon = 1e-20f;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +218,7 @@ void testGaussians()
 
   auto initial_f1 = data.f1_data;
   
-  for(int iter = 0; iter < 100; iter++) 
+  for(int iter = 0; iter < 50; iter++) 
   {
     std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
 
@@ -355,18 +355,17 @@ double EvalCurve1(double* camRGB, double* render, double* ref, size_t rectNum, i
   return loss;
 }
 
-void fitSingleImage()
+
+void FitSingleImage(const char* initialSpdPath, const char* image3dPath, const char* outPath, int leftBoundId = 2, int rightBoundId = 37)
 {
   int width = 0, height = 0, channels = 0;
-  std::vector<float> image3d = LoadImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", &width, &height, &channels);
+  std::vector<float> image3d = LoadImage3d1f(image3dPath, &width, &height, &channels);
   
-  auto rects   = GetCheckerRects();
-  auto avgSpec = AveragedSpectrumFromImage3D(image3d.data(), width, height, channels, rects);
-
-  auto r = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd",  channels);
-  auto g = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd",  channels);
-  auto b = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd",  channels); 
+  auto rects      = GetCheckerRects();
+  auto avgSpec    = AveragedSpectrumFromImage3D(image3d.data(), width, height, channels, rects);
+  auto initialSpd = LoadAndResampleSpectrum(initialSpdPath,  channels);
   
+  /*
   auto spdLight = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Lights/FalconEyesStudioLEDCOB120BW.spd",  channels); 
   auto spdMats  = LoadAndResampleAllCheckerSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/DatacolorSpyderCheckr24_card2", channels);
   std::vector<float> renderCoeff(rects.size(), 1.0f);
@@ -379,6 +378,7 @@ void fitSingleImage()
 
   std::cout << "minLoss   = " << minLoss << std::endl;
   std::cout << "minArgVal = " << minArgVal << std::endl;
+  */
   
   int w2, h2;
   auto image2dRef = LoadImage4fFromEXR("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr", &w2, &h2);
@@ -393,7 +393,7 @@ void fitSingleImage()
   std::vector<double> colorD(rects.size());
   {
     for(size_t i=0;i<curve.size();i++)
-      curve[i] = 1.0f; //double(r[i]);
+      curve[i] = 1.0; //double(initialSpd[i]);
 
     for(size_t i=0;i<avgSpecD.size();i++)
       avgSpecD[i] = double(avgSpec[i]);
@@ -409,7 +409,7 @@ void fitSingleImage()
   AdamOptimizer opt;
   opt.Init(curve.size());
   
-  for(int iter = 0; iter < 1000; iter++) 
+  for(int iter = 0; iter < 100; iter++) 
   {
     std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
 
@@ -423,17 +423,29 @@ void fitSingleImage()
     double lossVal = EvalCurve1(curve.data(), avgSpecD.data(), colorD.data(), rects.size(), channels);                                   
 
     opt.UpdateState(curve.data(), iter);
+    for(size_t i=0;i<curve.size();i++)
+      if(curve[i] < 0.0)
+        curve[i] = 0.0;
     
     std::cout << "iter = " << iter << ", loss = (" << lossVal << ")" << std::endl;
   }
+
+  for(int i=0;i<=leftBoundId;i++)
+    curve[i] = double(initialSpd[i]);
+  for(int i=rightBoundId;i<int(curve.size());i++)
+    curve[i] = double(initialSpd[i]);
   
-  std::ofstream fout2("red.csv");
+  std::string outCSVName = std::string(outPath) + ".csv";
+  std::string outSPDName = std::string(outPath) + ".spd";
+
+  std::ofstream fout2(outCSVName.c_str()), fout3(outSPDName.c_str());
   fout2 << "lambda;initial;optimized;" << std::endl;
 
   float step = (LAMBDA_MAX - LAMBDA_MIN)/float(channels);
   for(size_t i=0;i<curve.size();i++) {
-    float lambda = LAMBDA_MIN + step*float(i);
-    fout2 << lambda << ";" << r[i] << ";" << curve[i] << ";" << std::endl;
+    float lambda = LAMBDA_MIN + step*float(i) + 0.5f*step;
+    fout2 << lambda << ";" << initialSpd[i] << ";" << curve[i] << ";" << std::endl;
+    fout3 << lambda << " " << curve[i] << std::endl;
   }
   fout2.close();
 
@@ -442,9 +454,17 @@ void fitSingleImage()
 
 int main(int argc, const char** argv) 
 {
-  //test3DImageToImage4f();
-  fitSingleImage();
-  //testGaussians();
+  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
+                  "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
+                  "Canon60D_r_opt");
+
+  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
+                  "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
+                  "Canon60D_g_opt");
+                  
+  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
+                  "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
+                  "Canon60D_b_opt");
 
   //auto rects = GetCheckerRects();
   //
