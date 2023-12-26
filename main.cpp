@@ -393,7 +393,7 @@ void FitSingleImage(const char* initialSpdPath, const char* image3dPath, const c
   std::vector<double> colorD(rects.size());
   {
     for(size_t i=0;i<curve.size();i++)
-      curve[i] = 1.0; //double(initialSpd[i]);
+      curve[i] = double(initialSpd[i]);
 
     for(size_t i=0;i<avgSpecD.size();i++)
       avgSpecD[i] = double(avgSpec[i]);
