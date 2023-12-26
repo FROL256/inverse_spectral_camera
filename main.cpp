@@ -355,11 +355,24 @@ double EvalCurve1(double* camRGB, double* render, double* ref, size_t rectNum, i
   return loss;
 }
 
+/*
+auto spdLight = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Lights/FalconEyesStudioLEDCOB120BW.spd",  channels); 
+auto spdMats  = LoadAndResampleAllCheckerSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/DatacolorSpyderCheckr24_card2", channels);
+std::vector<float> renderCoeff(rects.size(), 1.0f);
+float loss = EvalRenderCoeff(renderCoeff.data(), spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels);
+std::cout << "initial loss = " << loss << std::endl;
 
-void FitSingleImage(const char* refImagePath,
-                    const char* initialSpdPath, 
-                    const char* image3dPath, 
-                    const char* outPath, int rgbIndex, int leftBoundId = 2, int rightBoundId = 37)
+float minArgVal = GoldenSectionCoeff2(0.0f, 100.0f, 5e-6f, FuncData{spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels});
+float minLoss   = EvalRenderCoeff2(minArgVal, spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels);
+std::cout << "minLoss   = " << minLoss << std::endl;
+std::cout << "minArgVal = " << minArgVal << std::endl;
+*/
+
+
+void FitSingleCurvePerImage(const char* refImagePath,
+                            const char* initialSpdPath, 
+                            const char* image3dPath, 
+                            const char* outPath, int rgbIndex, int leftBoundId = 2, int rightBoundId = 37)
 {
   int width = 0, height = 0, channels = 0;
   std::vector<float> image3d = LoadImage3d1f(image3dPath, &width, &height, &channels);
@@ -367,21 +380,6 @@ void FitSingleImage(const char* refImagePath,
   auto rects      = GetCheckerRects();
   auto avgSpec    = AveragedSpectrumFromImage3D(image3d.data(), width, height, channels, rects);
   auto initialSpd = LoadAndResampleSpectrum(initialSpdPath,  channels);
-  
-  /*
-  auto spdLight = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Lights/FalconEyesStudioLEDCOB120BW.spd",  channels); 
-  auto spdMats  = LoadAndResampleAllCheckerSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/DatacolorSpyderCheckr24_card2", channels);
-  std::vector<float> renderCoeff(rects.size(), 1.0f);
-
-  float loss = EvalRenderCoeff(renderCoeff.data(), spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels);
-  std::cout << "initial loss = " << loss << std::endl;
-  
-  float minArgVal = GoldenSectionCoeff2(0.0f, 100.0f, 5e-6f, FuncData{spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels});
-  float minLoss   = EvalRenderCoeff2(minArgVal, spdLight.data(), spdMats.data(), avgSpec.data(), int(rects.size()), channels);
-
-  std::cout << "minLoss   = " << minLoss << std::endl;
-  std::cout << "minArgVal = " << minArgVal << std::endl;
-  */
   
   int w2, h2;
   auto image2dRef = LoadImage4fFromEXR(refImagePath, &w2, &h2);
@@ -454,24 +452,34 @@ void FitSingleImage(const char* refImagePath,
 
 }
 
+// testHome   = "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW"
+// lightSetUp = "8459"
+
+void OptRGBCurvesForCamMulLight(const char* refImagePah, const char* spdImagePath)
+{
+  FitSingleCurvePerImage(refImagePah,
+                         "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
+                         spdImagePath, 
+                         "Canon60D_r_opt", 0);
+
+  FitSingleCurvePerImage(refImagePah,
+                         "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
+                         spdImagePath, 
+                         "Canon60D_g_opt", 1);
+                  
+  FitSingleCurvePerImage(refImagePah,
+                         "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
+                         spdImagePath, 
+                         "Canon60D_b_opt", 2);
+}
+
 
 int main(int argc, const char** argv) 
 {
-  
-  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
-                  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
-                  "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
-                  "Canon60D_r_opt", 0);
+  OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
+                             "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f");
 
-  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
-                 "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
-                  "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
-                  "Canon60D_g_opt", 1);
-                  
-  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
-                  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
-                  "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
-                  "Canon60D_b_opt", 2);
+
 
   //auto rects = GetCheckerRects();
   //
