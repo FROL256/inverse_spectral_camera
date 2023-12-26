@@ -477,9 +477,10 @@ void OptRGBCurvesForCamMulLight(const char* refImagePah, const char* spdImagePat
 int main(int argc, const char** argv) 
 {
   OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
-                             "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f");
+                             "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/render1.image3d1f");
 
-
+  //OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/Lamp_with_filter/8472/Images/IMG_8472_rawpy.exr",
+  //                           "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/Lamp_with_filter/8472/Images/render1.image3d1f");
 
   //auto rects = GetCheckerRects();
   //
