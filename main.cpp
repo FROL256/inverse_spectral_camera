@@ -356,7 +356,10 @@ double EvalCurve1(double* camRGB, double* render, double* ref, size_t rectNum, i
 }
 
 
-void FitSingleImage(const char* initialSpdPath, const char* image3dPath, const char* outPath, int rgbIndex, int leftBoundId = 2, int rightBoundId = 37)
+void FitSingleImage(const char* refImagePath,
+                    const char* initialSpdPath, 
+                    const char* image3dPath, 
+                    const char* outPath, int rgbIndex, int leftBoundId = 2, int rightBoundId = 37)
 {
   int width = 0, height = 0, channels = 0;
   std::vector<float> image3d = LoadImage3d1f(image3dPath, &width, &height, &channels);
@@ -381,7 +384,7 @@ void FitSingleImage(const char* initialSpdPath, const char* image3dPath, const c
   */
   
   int w2, h2;
-  auto image2dRef = LoadImage4fFromEXR("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr", &w2, &h2);
+  auto image2dRef = LoadImage4fFromEXR(refImagePath, &w2, &h2);
 
   std::cout << "w2 = " << w2 << std::endl;
   std::cout << "h2 = " << h2 << std::endl;
@@ -409,7 +412,7 @@ void FitSingleImage(const char* initialSpdPath, const char* image3dPath, const c
   AdamOptimizer opt;
   opt.Init(curve.size());
   
-  for(int iter = 0; iter < 100; iter++) 
+  for(int iter = 0; iter < 500; iter++) 
   {
     std::fill(opt.grad.begin(), opt.grad.end(), 0.0);  
 
@@ -455,15 +458,18 @@ void FitSingleImage(const char* initialSpdPath, const char* image3dPath, const c
 int main(int argc, const char** argv) 
 {
   
-  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
+  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
+                  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
                   "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
                   "Canon60D_r_opt", 0);
 
-  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
+  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
+                 "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
                   "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
                   "Canon60D_g_opt", 1);
                   
-  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
+  FitSingleImage("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
+                  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
                   "/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", 
                   "Canon60D_b_opt", 2);
 
