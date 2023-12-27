@@ -455,26 +455,28 @@ void FitSingleCurvePerImage(std::vector<Rect> rects,
 // testHome   = "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW"
 // lightSetUp = "8459"
 
-void OptRGBCurvesForCamMulLight(const char* refImagePah, const char* spdImagePath)
+void OptRGBCurvesForCamMulLight(const char* a_testDir, const char* a_testNumber)
 {
-  //auto rects  = GetCheckerRects();
-  auto rects = GetCheckerRectFromMask("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/mask.bmp");
+  std::string refImagePath = std::string(a_testDir) + "/" + std::string(a_testNumber) + "/Images/" + std::string("IMG_") + std::string(a_testNumber) + "_rawpy.exr";
+  std::string spdImagePath = std::string(a_testDir) + "/" + std::string(a_testNumber) + "/Images/" + std::string("render1.image3d1f");
+  std::string mskImagePath = std::string(a_testDir) + "/" + std::string(a_testNumber) + "/" + std::string("mask.png");
 
-  FitSingleCurvePerImage(rects, refImagePah,  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
-                         spdImagePath, "Canon60D_r_opt", 0);
+  auto rects = GetCheckerRectFromMask(mskImagePath.c_str());
 
-  FitSingleCurvePerImage(rects, refImagePah,  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
-                         spdImagePath, "Canon60D_g_opt", 1);
+  FitSingleCurvePerImage(rects, refImagePath.c_str(),  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
+                         spdImagePath.c_str(), "Canon60D_r_opt", 0);
+
+  FitSingleCurvePerImage(rects, refImagePath.c_str(),  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
+                         spdImagePath.c_str(), "Canon60D_g_opt", 1);
                   
-  FitSingleCurvePerImage(rects, refImagePah,  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
-                         spdImagePath, "Canon60D_b_opt", 2);
+  FitSingleCurvePerImage(rects, refImagePath.c_str(),  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
+                         spdImagePath.c_str(), "Canon60D_b_opt", 2);
 }
 
 
 int main(int argc, const char** argv) 
 {
-  OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/IMG_8459_rawpy.exr",
-                             "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/Images/render1.image3d1f");
+  OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW", "8459");
 
   //OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/Lamp_with_filter/8472/Images/IMG_8472_rawpy.exr",
   //                           "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/Lamp_with_filter/8472/Images/render1.image3d1f");

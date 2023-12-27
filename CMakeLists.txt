@@ -9,6 +9,13 @@ set(ENZYME_PLUGIN_DLL  "/home/frol/PROG/enzyme/build/Enzyme/ClangEnzyme-${CLANG_
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/litemath
                     ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyexr)
 
+option(USE_STB_IMAGE "Use StbImage for 'png'" ON)
+
+if(USE_STB_IMAGE)
+  add_definitions(-DUSE_STB_IMAGE)
+  include_directories("${CMAKE_SOURCE_DIR}/external/litemath/external")
+endif()
+
 # sanitizer options
 #include(cmake/Sanitizers.cmake)
 #enable_sanitizers(project_options)
