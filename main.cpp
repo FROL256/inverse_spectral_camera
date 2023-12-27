@@ -257,7 +257,7 @@ void testGaussians()
 void test3DImageToImage4f()
 {
   int width = 0, height = 0, channels = 0;
-  std::vector<float> image3d = LoadImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", &width, &height, &channels);
+  std::vector<float> image3d = LoadImage3d1f("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/LED_panel/8496/Images/render1.image3d1f", &width, &height, &channels);
   std::vector<float4> image2d(width*height);
 
   auto r = LoadAndResampleSpectrum("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd",  channels);
@@ -283,7 +283,7 @@ void test3DImageToImage4f()
     }
   }
   
-  SaveImage4fToEXR((const float*)image2d.data(), width, height, "/home/frol/PROG/HydraRepos/HydraCore3/z_checker_from_spdi.exr");
+  SaveImage4fToEXR((const float*)image2d.data(), width, height, "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/LED_panel/8496/Images/render1_from_spd.exr");
 }
 
 float EvalRenderCoeff(const float* renderCoeff, const float* lgtSpec, const float* matSpec, const float* renderRef, int rectNum, int channelNum)
@@ -452,9 +452,6 @@ void FitSingleCurvePerImage(std::vector<Rect> rects,
 
 }
 
-// testHome   = "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW"
-// lightSetUp = "8459"
-
 void OptRGBCurvesForCamMulLight(const char* a_testDir, const char* a_testNumber)
 {
   std::string refImagePath = std::string(a_testDir) + "/" + std::string(a_testNumber) + "/Images/" + std::string("IMG_") + std::string(a_testNumber) + "_rawpy.exr";
@@ -476,16 +473,12 @@ void OptRGBCurvesForCamMulLight(const char* a_testDir, const char* a_testNumber)
 
 int main(int argc, const char** argv) 
 {
-  OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW", "8459");
+  //test3DImageToImage4f();
+  
+  //OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW", "8459");
 
-  //OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/Lamp_with_filter/8472/Images/IMG_8472_rawpy.exr",
-  //                           "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/Lamp_with_filter/8472/Images/render1.image3d1f");
+  OptRGBCurvesForCamMulLight("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/LED_panel", "8496");
 
-  //auto rects = GetCheckerRects();
-  //
-  //int  channels = 0;
-  //auto colorHDR = LoadAveragedSpectrumFromImage3d1f("/home/frol/PROG/HydraRepos/HydraCore3/z_checker.image3d1f", rects, &channels);
-  //int a = 2;
 
   return 0;
 }
