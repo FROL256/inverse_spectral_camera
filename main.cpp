@@ -369,7 +369,8 @@ std::cout << "minArgVal = " << minArgVal << std::endl;
 */
 
 
-void FitSingleCurvePerImage(const char* refImagePath,
+void FitSingleCurvePerImage(std::vector<Rect> rects,
+                            const char* refImagePath,
                             const char* initialSpdPath, 
                             const char* image3dPath, 
                             const char* outPath, int rgbIndex, int leftBoundId = 2, int rightBoundId = 37)
@@ -377,7 +378,6 @@ void FitSingleCurvePerImage(const char* refImagePath,
   int width = 0, height = 0, channels = 0;
   std::vector<float> image3d = LoadImage3d1f(image3dPath, &width, &height, &channels);
   
-  auto rects      = GetCheckerRects();
   auto avgSpec    = AveragedSpectrumFromImage3D(image3d.data(), width, height, channels, rects);
   auto initialSpd = LoadAndResampleSpectrum(initialSpdPath,  channels);
   
@@ -457,20 +457,17 @@ void FitSingleCurvePerImage(const char* refImagePath,
 
 void OptRGBCurvesForCamMulLight(const char* refImagePah, const char* spdImagePath)
 {
-  FitSingleCurvePerImage(refImagePah,
-                         "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
-                         spdImagePath, 
-                         "Canon60D_r_opt", 0);
+  //auto rects  = GetCheckerRects();
+  auto rects = GetCheckerRectFromMask("/home/frol/PROG/HydraRepos/rendervsphoto/Tests/FalconEyesStudioLEDCOB120BW/8459/mask.bmp");
 
-  FitSingleCurvePerImage(refImagePah,
-                         "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
-                         spdImagePath, 
-                         "Canon60D_g_opt", 1);
+  FitSingleCurvePerImage(rects, refImagePah,  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_r.spd", 
+                         spdImagePath, "Canon60D_r_opt", 0);
+
+  FitSingleCurvePerImage(rects, refImagePah,  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_g.spd", 
+                         spdImagePath, "Canon60D_g_opt", 1);
                   
-  FitSingleCurvePerImage(refImagePah,
-                         "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
-                         spdImagePath, 
-                         "Canon60D_b_opt", 2);
+  FitSingleCurvePerImage(rects, refImagePah,  "/home/frol/PROG/HydraRepos/rendervsphoto/Tests/data/Spectral_data/Camera/Canon60D_b.spd", 
+                         spdImagePath, "Canon60D_b_opt", 2);
 }
 
 

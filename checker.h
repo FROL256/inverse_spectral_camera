@@ -17,6 +17,8 @@ struct Rect
 };
 
 std::vector<Rect>   GetCheckerRects();
+std::vector<Rect>   GetCheckerRectFromMask(const char* maskPath);
+
 std::vector<float3> LoadAveragedCheckerLDRData(const char* path, const std::vector<Rect>& a_rectData); 
 std::vector<float>  AveragedSpectrumFromImage3D(const float* data, int width, int height, int channels, const std::vector<Rect>& a_rectData);
 std::vector<float3> AveragedColor4f(const float* data, int width, int heaight, const std::vector<Rect>& a_rectData);
