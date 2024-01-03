@@ -30,7 +30,7 @@ private:
 };
 
 template<typename T>
-struct AdamOptimizer : public IGradientOptimizer<T>
+struct AdamOptimizer : public IGradientOptimizer<T> // implementation according to the Tzu Mao Li PhD Thesis
 {
   AdamOptimizer(size_t a_size)
   {
@@ -40,7 +40,7 @@ struct AdamOptimizer : public IGradientOptimizer<T>
     std::fill(m_GSquare.begin(), m_GSquare.end(), 0.0);
   }
   
-  void step(T* a_state, const T* a_grad, int iter) override
+  void step(T* a_state, const T* a_grad, int iter) override 
   {
     int factorGamma = iter/100 + 1;
     const T alpha   = 0.5;
@@ -67,10 +67,10 @@ struct AdamOptimizer : public IGradientOptimizer<T>
 };
 
 template<typename T>
-class AdamOptimizer2 : public IGradientOptimizer<T> // this implementation does not don't works ... 
+class AdamOptimizer2 : public IGradientOptimizer<T> // implementation according to the original paper
 {
 public:
-  AdamOptimizer2(int _params_count, T _lr = T(0.01f), T _beta_1 = T(0.9f), T _beta_2 = T(0.999f), T _eps = T(1e-8)) 
+  AdamOptimizer2(int _params_count, T _lr = T(0.1f), T _beta_1 = T(0.9f), T _beta_2 = T(0.999f), T _eps = T(1e-8)) 
   {
     lr = _lr;
     beta_1 = _beta_1;
@@ -79,6 +79,7 @@ public:
     V = std::vector<T>(_params_count, 0);
     S = std::vector<T>(_params_count, 0);
     iter = 0;
+    params_count = _params_count;
   }
   
   void step(T *params_ptr, const T* grad_ptr, int a_iter) override
