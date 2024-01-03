@@ -104,7 +104,7 @@ void testGaussians()
   TestData data;
   data.Init(100);
 
-  AdamOptimizer<float> opt(100);
+  AdamOptimizer2<float> opt(100);
   std::vector<float> grad(100);
 
   auto initial_f1 = data.f1_data;
