@@ -78,11 +78,12 @@ public:
     eps = _eps;
     V = std::vector<T>(_params_count, 0);
     S = std::vector<T>(_params_count, 0);
+    iter = 0;
   }
   
-  void step(T *params_ptr, const T* grad_ptr, int iter) override
+  void step(T *params_ptr, const T* grad_ptr, int a_iter) override
   {
-    for (int i = 0; i < params_count; i++)
+    for (size_t i = 0; i < params_count; i++)
     {
       T g = grad_ptr[i];
       V[i] = beta_1 * V[i] + (1 - beta_1) * g;
